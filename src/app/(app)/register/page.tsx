@@ -1,18 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
 
+const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+
 export default function RegisterPage() {
   const router = useRouter();
+  const turnstileRef = useRef<TurnstileInstance>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -33,13 +38,21 @@ export default function RegisterPage() {
       toast.error("两次输入的密码不一致");
       return;
     }
+    if (!turnstileSiteKey) {
+      toast.error("人机验证未配置");
+      return;
+    }
+    if (!turnstileToken) {
+      toast.error("请先完成人机验证");
+      return;
+    }
 
     setSubmitting(true);
     try {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, turnstileToken }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -48,6 +61,8 @@ export default function RegisterPage() {
       toast.success("注册成功，正在跳转到首页…");
       router.push("/");
     } catch (e) {
+      setTurnstileToken("");
+      turnstileRef.current?.reset();
       toast.error(e instanceof Error ? e.message : "注册失败");
     } finally {
       setSubmitting(false);
@@ -99,7 +114,24 @@ export default function RegisterPage() {
             />
           </div>
 
-          <Button type="submit" className="w-full" disabled={submitting}>
+          {turnstileSiteKey ? (
+            <div className="flex justify-center">
+              <Turnstile
+                ref={turnstileRef}
+                siteKey={turnstileSiteKey}
+                onSuccess={(token) => setTurnstileToken(token)}
+                onExpire={() => setTurnstileToken("")}
+                onError={() => {
+                  setTurnstileToken("");
+                  toast.error("人机验证加载失败，请刷新后重试");
+                }}
+              />
+            </div>
+          ) : (
+            <p className="text-sm text-destructive">人机验证未配置</p>
+          )}
+
+          <Button type="submit" className="w-full" disabled={submitting || !turnstileToken}>
             {submitting ? (
               <>
                 <Spinner className="mr-1.5 h-4 w-4" /> 注册中…
