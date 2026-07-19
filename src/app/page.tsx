@@ -8,7 +8,7 @@ export default function HomePage() {
         <span className="inline-flex items-center rounded-full bg-accent px-3 py-1 text-xs font-medium text-accent-foreground">
           V1 原型 · 仅供视觉参考
         </span>
-        <h1 className="mt-6 text-4xl sm:text-5xl font-bold tracking-tight">
+        <h1 className="mt-6 text-4xl sm:text-5xl font-bold tracking-tight text-purple-600">
           看见自己穿上它的样子
         </h1>
         <p className="mt-4 max-w-xl text-muted-foreground">
