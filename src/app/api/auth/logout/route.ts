@@ -3,9 +3,7 @@ import { logout } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
-export async function POST() {
-  return apiHandler(async () => {
-    await logout();
-    return jsonOk({ message: "已退出登录" });
-  });
-}
+export const POST = apiHandler(async () => {
+  await logout();
+  return jsonOk({ message: "已退出登录" });
+});

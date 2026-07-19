@@ -197,61 +197,40 @@ export async function getCurrentUser(): Promise<CurrentUser> {
     }
   }
 
-  let anonUid = store.get("tryon_anon_uid")?.value;
-  let isNew = false;
+  const anonUid = store.get("tryon_anon_uid")?.value;
+  if (anonUid) {
+    const rows = await db
+      .select({
+        id: users.id,
+        isAnonymous: users.isAnonymous,
+        email: users.email,
+      })
+      .from(users)
+      .where(eq(users.anonUid, anonUid))
+      .limit(1);
 
-  if (!anonUid) {
-    anonUid = nanoid();
-    isNew = true;
-    store.set("tryon_anon_uid", anonUid, {
-      httpOnly: true,
-      sameSite: "lax",
-      path: "/",
-      maxAge: COOKIE_MAX_AGE,
-    });
+    if (rows[0]) {
+      await db
+        .update(users)
+        .set({ lastSeenAt: new Date() })
+        .where(eq(users.id, rows[0].id));
+
+      return {
+        userId: rows[0].id,
+        anonUid,
+        isAnonymous: rows[0].isAnonymous,
+        email: rows[0].email ?? null,
+        isNew: false,
+      };
+    }
   }
-
-  const rows = await db
-    .select({
-      id: users.id,
-      isAnonymous: users.isAnonymous,
-      email: users.email,
-    })
-    .from(users)
-    .where(eq(users.anonUid, anonUid))
-    .limit(1);
-
-  if (rows[0]) {
-    await db
-      .update(users)
-      .set({ lastSeenAt: new Date() })
-      .where(eq(users.id, rows[0].id));
-
-    return {
-      userId: rows[0].id,
-      anonUid,
-      isAnonymous: rows[0].isAnonymous,
-      email: rows[0].email ?? null,
-      isNew,
-    };
-  }
-
-  const created = await db
-    .insert(users)
-    .values({ anonUid, isAnonymous: true })
-    .returning({ id: users.id });
-
-  await db
-    .insert(quota)
-    .values({ userId: created[0].id, totalQuota: LIMITS.DAILY_QUOTA })
-    .onConflictDoNothing();
 
   return {
-    userId: created[0].id,
-    anonUid,
+    userId: "",
+    anonUid: "",
     isAnonymous: true,
     email: null,
-    isNew,
+    isNew: false,
   };
 }
 
