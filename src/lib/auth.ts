@@ -46,10 +46,6 @@ async function verifyPassword(password: string, hash: string): Promise<boolean> 
   return timingSafeEqual(derivedKey, Buffer.from(key, "hex"));
 }
 
-function generateSessionToken(): string {
-  return nanoid(32);
-}
-
 export async function register(input: RegisterInput): Promise<CurrentUser> {
   await ensureMigrated();
 
@@ -88,9 +84,8 @@ export async function register(input: RegisterInput): Promise<CurrentUser> {
     .values({ userId: created[0].id, totalQuota: LIMITS.DAILY_QUOTA })
     .onConflictDoNothing();
 
-  const sessionToken = generateSessionToken();
   const store = await cookies();
-  store.set(AUTH_COOKIE, sessionToken, {
+  store.set(AUTH_COOKIE, anonUid, {
     httpOnly: true,
     sameSite: "lax",
     path: "/",
@@ -136,9 +131,8 @@ export async function login(input: LoginInput): Promise<CurrentUser> {
     throw new NotFoundError("邮箱或密码错误");
   }
 
-  const sessionToken = generateSessionToken();
   const store = await cookies();
-  store.set(AUTH_COOKIE, sessionToken, {
+  store.set(AUTH_COOKIE, user.anonUid, {
     httpOnly: true,
     sameSite: "lax",
     path: "/",
