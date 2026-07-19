@@ -16,6 +16,12 @@ export class ValidationError extends AppError {
   }
 }
 
+export class UnauthorizedError extends AppError {
+  constructor(message = "请先登录") {
+    super("UNAUTHORIZED", message, 401);
+  }
+}
+
 export class PrecheckError extends AppError {
   constructor(message: string, extra?: unknown) {
     super("PRECHECK_FAILED", message, 422, extra);
