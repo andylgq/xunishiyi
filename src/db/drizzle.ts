@@ -4,6 +4,8 @@ import {
 } from "drizzle-orm/pglite";
 import postgres from "postgres";
 import { PGlite } from "@electric-sql/pglite";
+import os from "node:os";
+import path from "node:path";
 import * as schema from "./schema";
 
 /**
@@ -28,7 +30,10 @@ function createDb(): Db {
     return drizzle(client, { schema });
   }
   // 嵌入式 PGlite：本地零安装开发库
-  const pglite = new PGlite({ dataDir: "./.pglite-data" });
+  const dataDir = process.env.VERCEL
+    ? path.join(os.tmpdir(), "xunishiyi-pglite-data")
+    : "./.pglite-data";
+  const pglite = new PGlite({ dataDir });
   global.__tryonPglite = pglite;
   return drizzlePglite(pglite, { schema }) as unknown as Db;
 }

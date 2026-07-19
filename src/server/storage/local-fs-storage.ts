@@ -1,8 +1,11 @@
 import { promises as fs } from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import type { StorageProvider } from "./storage-provider";
 
-const ROOT = path.join(process.cwd(), "uploads");
+const ROOT = process.env.VERCEL
+  ? path.join(os.tmpdir(), "xunishiyi-uploads")
+  : path.join(process.cwd(), "uploads");
 
 function full(key: string): string {
   // 防止路径穿越
