@@ -3,13 +3,11 @@ import { getCurrentUser } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
-export async function GET() {
-  return apiHandler(async () => {
-    const user = await getCurrentUser();
-    return jsonOk({
-      userId: user.userId,
-      email: user.email,
-      isAnonymous: user.isAnonymous,
-    });
+export const GET = apiHandler(async () => {
+  const user = await getCurrentUser();
+  return jsonOk({
+    userId: user.userId,
+    email: user.email,
+    isAnonymous: user.isAnonymous,
   });
-}
+});
