@@ -35,6 +35,16 @@ export default function HomePage() {
       </section>
 
       <TeamSection />
+
+      <footer className="mx-auto max-w-5xl px-4 pb-6 text-center text-sm text-muted-foreground">
+        有问题或建议？联系我们：
+        <a
+          href="mailto:liuhaofeng2023@gmail.com?subject=虚拟试衣反馈"
+          className="ml-1 text-primary underline-offset-4 hover:underline"
+        >
+          liuhaofeng2023@gmail.com
+        </a>
+      </footer>
     </main>
   );
 }
