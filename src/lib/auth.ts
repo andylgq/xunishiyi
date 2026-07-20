@@ -164,9 +164,11 @@ export async function logout(): Promise<void> {
   });
 }
 
+const ANON_COOKIE = process.env.ANON_COOKIE_NAME ?? "tryon_anon_uid";
+
 export async function getCurrentUser(): Promise<CurrentUser> {
   await ensureMigrated();
-  const store = await cookies();
+  const store = cookies();
 
   const authCookie = store.get(AUTH_COOKIE)?.value;
   if (authCookie) {
@@ -197,7 +199,7 @@ export async function getCurrentUser(): Promise<CurrentUser> {
     }
   }
 
-  const anonUid = store.get("tryon_anon_uid")?.value;
+  const anonUid = store.get(ANON_COOKIE)?.value;
   if (anonUid) {
     const rows = await db
       .select({
