@@ -6,6 +6,7 @@ import { createTask } from "@/server/tryon/task-service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 export const POST = apiHandler(async (req) => {
   const { userId } = await getCurrentUserId();

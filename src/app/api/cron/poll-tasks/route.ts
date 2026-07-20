@@ -4,6 +4,7 @@ import { pollAllInFlight } from "@/server/tryon/poll-worker";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 export const POST = apiHandler(async (req) => {
   const secret = req.headers.get("x-cron-secret");

@@ -1,4 +1,3 @@
-import { nanoid } from "nanoid";
 import { eq } from "drizzle-orm";
 import type {
   TryOnProvider,
@@ -8,7 +7,6 @@ import type {
   ResultImage,
 } from "./provider";
 import { ProviderError } from "@/lib/errors";
-import { logger } from "@/lib/logger";
 import { db } from "@/db/drizzle";
 import { uploads, tryonResults } from "@/db/schema";
 import { ensureMigrated } from "@/db/ensure-migrated";
@@ -16,6 +14,7 @@ import { storage } from "@/server/storage/storage";
 
 const ARK_ENDPOINT = "https://ark.cn-beijing.volces.com/api/v3/images/generations";
 const ARK_MODEL = "doubao-seedream-5-0-260128";
+const ARK_RESULT_PREFIX = "ark-result:";
 
 interface ArkApiResponse {
   model: string;
@@ -32,65 +31,52 @@ interface ArkResult {
   url: string;
 }
 
-type ArkPromise = Promise<ArkResult>;
+function encodeProviderTaskId(url: string): string {
+  return `${ARK_RESULT_PREFIX}${Buffer.from(url, "utf8").toString("base64url")}`;
+}
+
+function decodeProviderTaskId(providerTaskId: string): ArkResult | null {
+  if (!providerTaskId.startsWith(ARK_RESULT_PREFIX)) return null;
+
+  try {
+    const url = Buffer.from(
+      providerTaskId.slice(ARK_RESULT_PREFIX.length),
+      "base64url"
+    ).toString("utf8");
+    return { url };
+  } catch {
+    return null;
+  }
+}
 
 export class ArkTryOnProvider implements TryOnProvider {
   readonly name = "ark";
 
-  private tasks = new Map<string, ArkPromise>();
-
   constructor(private apiKey: string) {}
 
-  submitTask(params: SubmitParams): Promise<SubmitResult> {
-    const taskId = `${Date.now()}-${nanoid(8)}`;
+  async submitTask(params: SubmitParams): Promise<SubmitResult> {
+    const result = await this.callArkApi(params);
 
-    const promise = this.callArkApi(params);
-
-    this.tasks.set(taskId, promise);
-
-    promise.catch((e) => {
-      logger.error(`[ark:${taskId}] API call failed`, e);
-    });
-
-    return Promise.resolve({
-      providerTaskId: taskId,
+    return {
+      providerTaskId: encodeProviderTaskId(result.url),
       raw: { seed: params.seed, garmentType: params.garmentType },
-    });
+    };
   }
 
   async getTaskStatus(providerTaskId: string): Promise<StatusResult> {
-    const promise = this.tasks.get(providerTaskId);
-    if (!promise) {
+    const result = decodeProviderTaskId(providerTaskId);
+    if (!result) {
       return { status: "not_found" };
     }
 
-    const result = await Promise.race([
-      promise.then(() => "done" as const),
-      new Promise<"generating">((resolve) => {
-        setTimeout(() => resolve("generating"), 100);
-      }),
-    ]);
-
-    if (result === "done") {
-      try {
-        const res = await promise;
-        return { status: "done", raw: res };
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e);
-        return { status: "failed", errorCode: "ARK_API_ERROR", errorMessage: msg, raw: e };
-      }
-    }
-
-    return { status: "generating" };
+    return { status: "done", raw: result };
   }
 
   async fetchResultImage(providerTaskId: string): Promise<ResultImage> {
-    const promise = this.tasks.get(providerTaskId);
-    if (!promise) {
+    const result = decodeProviderTaskId(providerTaskId);
+    if (!result) {
       throw new ProviderError("NOT_FOUND", "任务不存在");
     }
-
-    const result = await promise;
 
     const response = await fetch(result.url);
     if (!response.ok) {
@@ -114,7 +100,7 @@ export class ArkTryOnProvider implements TryOnProvider {
 
     const body = {
       model: ARK_MODEL,
-      prompt: "将图1的服装换为图2的服装",
+      prompt: "将图1中的人物换上图2中的服装，保持人物身份、姿态和背景自然。",
       image: [personDataUri, garmentDataUri],
       sequential_image_generation: "disabled",
       response_format: "url",
@@ -158,7 +144,7 @@ export class ArkTryOnProvider implements TryOnProvider {
     }
 
     let storageKey: string | null = null;
-    let contentType: string = "image/png";
+    let contentType = "image/png";
 
     const uploadRows = await db
       .select({ storageKey: uploads.storageKey, contentType: uploads.contentType })
@@ -178,7 +164,6 @@ export class ArkTryOnProvider implements TryOnProvider {
 
       if (resultRows.length > 0) {
         storageKey = resultRows[0].storageKey;
-        contentType = "image/png";
       }
     }
 

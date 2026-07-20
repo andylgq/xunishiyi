@@ -168,7 +168,7 @@ const ANON_COOKIE = process.env.ANON_COOKIE_NAME ?? "tryon_anon_uid";
 
 export async function getCurrentUser(): Promise<CurrentUser> {
   await ensureMigrated();
-  const store = cookies();
+  const store = await cookies();
 
   const authCookie = store.get(AUTH_COOKIE)?.value;
   if (authCookie) {
