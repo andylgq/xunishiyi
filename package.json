@@ -15,6 +15,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1090.0",
     "@electric-sql/pglite": "^0.2.13",
     "@hookform/resolvers": "^3.9.1",
     "@marsidev/react-turnstile": "^1.5.3",

@@ -5,7 +5,7 @@ import { ensureMigrated } from "@/db/ensure-migrated";
 import { db } from "@/db/drizzle";
 import { uploads } from "@/db/schema";
 import { NotFoundError, ValidationError } from "@/lib/errors";
-import { localFsStorage } from "@/server/storage/local-fs-storage";
+import { storage } from "@/server/storage/storage";
 import { runPrecheck, type PrecheckInput } from "@/server/precheck";
 import { signRelativeFileUrl } from "@/server/storage/signed-url";
 import { recordEvent, MetricEvent } from "@/server/metrics/collector";
@@ -31,7 +31,7 @@ export const POST = apiHandler(async (req) => {
   if (!upload) throw new NotFoundError("上传记录不存在");
   if (upload.isDeleted) throw new NotFoundError("上传记录已删除");
 
-  const buffer = await localFsStorage.read(upload.storageKey);
+  const buffer = await storage.read(upload.storageKey);
   if (!buffer) throw new NotFoundError("图片文件不存在，请重新上传");
 
   const input: PrecheckInput = {

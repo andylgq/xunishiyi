@@ -12,7 +12,7 @@ import { logger } from "@/lib/logger";
 import { db } from "@/db/drizzle";
 import { uploads, tryonResults } from "@/db/schema";
 import { ensureMigrated } from "@/db/ensure-migrated";
-import { localFsStorage } from "@/server/storage/local-fs-storage";
+import { storage } from "@/server/storage/storage";
 
 const ARK_ENDPOINT = "https://ark.cn-beijing.volces.com/api/v3/images/generations";
 const ARK_MODEL = "doubao-seedream-5-0-260128";
@@ -186,7 +186,7 @@ export class ArkTryOnProvider implements TryOnProvider {
       throw new ProviderError("FILE_NOT_FOUND", `找不到文件: ${fileId}`);
     }
 
-    const buffer = await localFsStorage.read(storageKey);
+    const buffer = await storage.read(storageKey);
     if (!buffer) {
       throw new ProviderError("FILE_NOT_FOUND", `文件读取失败: ${storageKey}`);
     }

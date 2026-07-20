@@ -5,7 +5,7 @@ import { ensureMigrated } from "@/db/ensure-migrated";
 import { db } from "@/db/drizzle";
 import { uploads } from "@/db/schema";
 import { NotFoundError } from "@/lib/errors";
-import { localFsStorage } from "@/server/storage/local-fs-storage";
+import { storage } from "@/server/storage/storage";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -24,7 +24,7 @@ export const DELETE = apiHandler(async (req, ctx) => {
 
   await db.update(uploads).set({ isDeleted: true }).where(eq(uploads.id, id));
   try {
-    await localFsStorage.remove(upload.storageKey);
+    await storage.remove(upload.storageKey);
   } catch {
     /* ignore */
   }

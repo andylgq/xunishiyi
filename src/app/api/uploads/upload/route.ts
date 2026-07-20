@@ -6,7 +6,7 @@ import { db } from "@/db/drizzle";
 import { uploads } from "@/db/schema";
 import { ValidationError, NotFoundError } from "@/lib/errors";
 import { ACCEPTED_MIME, LIMITS } from "@/lib/constants";
-import { localFsStorage } from "@/server/storage/local-fs-storage";
+import { storage } from "@/server/storage/storage";
 import { getImageMeta } from "@/server/precheck/rules-engine";
 import crypto from "node:crypto";
 
@@ -43,7 +43,7 @@ export const POST = apiHandler(async (req) => {
   if (upload.isDeleted) throw new NotFoundError("上传记录已删除");
 
   const buf = Buffer.from(await file.arrayBuffer());
-  await localFsStorage.save(upload.storageKey, buf, contentType);
+  await storage.save(upload.storageKey, buf, contentType);
 
   const meta = await getImageMeta(buf);
   const sha256 = crypto.createHash("sha256").update(buf).digest("hex");

@@ -3,7 +3,7 @@ import { ensureMigrated } from "@/db/ensure-migrated";
 import { db } from "@/db/drizzle";
 import { uploads, tryonResults } from "@/db/schema";
 import { verifyFileToken } from "@/lib/jwt";
-import { localFsStorage } from "@/server/storage/local-fs-storage";
+import { storage } from "@/server/storage/storage";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -46,7 +46,7 @@ export async function GET(
     .limit(1);
   const upload = uploadRows[0];
   if (upload && upload.expiresAt > now) {
-    const buf = await localFsStorage.read(upload.storageKey);
+    const buf = await storage.read(upload.storageKey);
     if (!buf) {
       return Response.json(
         { error: { code: "NOT_FOUND", message: "文件不存在" } },
@@ -74,7 +74,7 @@ export async function GET(
     .limit(1);
   const result = resultRows[0];
   if (result && result.expiresAt > now && result.storageKey) {
-    const buf = await localFsStorage.read(result.storageKey);
+    const buf = await storage.read(result.storageKey);
     if (!buf) {
       return Response.json(
         { error: { code: "NOT_FOUND", message: "文件不存在" } },

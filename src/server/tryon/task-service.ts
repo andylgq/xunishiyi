@@ -18,7 +18,7 @@ import {
   ConflictError,
 } from "@/lib/errors";
 import { logger } from "@/lib/logger";
-import { localFsStorage } from "@/server/storage/local-fs-storage";
+import { storage } from "@/server/storage/storage";
 import { signRelativeFileUrl, signAbsoluteFileUrl } from "@/server/storage/signed-url";
 import { reserveQuota, commitQuota, releaseQuota, refundQuota } from "@/server/quota/quota-service";
 import { getProvider } from "./provider-factory";
@@ -348,7 +348,7 @@ export async function pollAndAdvance(task: typeof tryonTasks.$inferSelect): Prom
     try {
       const img = await provider.fetchResultImage(providerTaskId);
       const key = resultStorageKey(task.userId, task.id, idx, seed);
-      await localFsStorage.save(key, img.buffer, "image/png");
+      await storage.save(key, img.buffer, "image/png");
       await db.insert(tryonResults).values({
         taskId: task.id,
         userId: task.userId,
@@ -537,7 +537,7 @@ export async function deleteResult(
     .where(eq(tryonResults.id, resultId));
   if (result.storageKey) {
     try {
-      await localFsStorage.remove(result.storageKey);
+      await storage.remove(result.storageKey);
     } catch (e) {
       logger.warn("[result] remove file failed", e);
     }
@@ -555,7 +555,7 @@ export async function cleanupExpiredUploads(): Promise<number> {
   for (const u of rows) {
     await db.update(uploads).set({ isDeleted: true }).where(eq(uploads.id, u.id));
     try {
-      await localFsStorage.remove(u.storageKey);
+      await storage.remove(u.storageKey);
     } catch {
       /* ignore */
     }
@@ -578,7 +578,7 @@ export async function cleanupExpiredResults(): Promise<number> {
       .where(eq(tryonResults.id, r.id));
     if (r.storageKey) {
       try {
-        await localFsStorage.remove(r.storageKey);
+        await storage.remove(r.storageKey);
       } catch {
         /* ignore */
       }
